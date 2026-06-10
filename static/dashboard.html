@@ -203,6 +203,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;
       </div>
       <div class="row">
         <button class="btn btn-p" id="abtn" onclick="startAnalysis()" disabled>▶ ANALYZE</button>
+        <button class="btn btn-o" id="pdf-btn" onclick="downloadPDF()" disabled>PDF REPORT</button>
         <button class="btn btn-o" onclick="resetUI()">↺ RESET</button>
       </div>
       <div style="margin-top:10px;font-family:var(--mo);font-size:9px;color:var(--t2);" id="cid-disp"></div>
@@ -440,6 +441,7 @@ function handleEvent(ev){
       .forEach(e=>setEngine(e,'done','✓'));
     document.getElementById('abtn').disabled=false;
     document.getElementById('qa-btn').disabled=false;
+    document.getElementById('pdf-btn').disabled=false;
     if(d.final_score){setRing(d.final_score,d.final_score,SEV_COLORS[d.severity]||'#888');}
   }
   if(t==='nation_state_alert'){showAPT(d);}
@@ -481,8 +483,14 @@ function renderFinal(data){
   if(rs.apt_detected||rs.nation_state)showAPT(rs);
   document.getElementById('abtn').disabled=false;
   document.getElementById('qa-btn').disabled=false;
+  document.getElementById('pdf-btn').disabled=false;
   document.getElementById('job-badge').textContent='COMPLETE';
   renderIOCs(data.strings||{});
+}
+
+function downloadPDF(){
+  if(!caseId)return;
+  window.open('/api/report/'+encodeURIComponent(caseId)+'/pdf','_blank');
 }
 
 function updateSummaryCards(d){
@@ -621,6 +629,7 @@ function resetUI(){
   document.getElementById('fc').style.display='none';
   document.getElementById('abtn').disabled=true;
   document.getElementById('qa-btn').disabled=true;
+  document.getElementById('pdf-btn').disabled=true;
   document.getElementById('job-badge').textContent='IDLE';
   document.getElementById('apt-alert').style.display='none';
   document.getElementById('feed').innerHTML='';
