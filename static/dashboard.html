@@ -23,6 +23,10 @@ body::after{content:'Developed by Mohan Sriram Kunamsetty';position:fixed;right:
 
 /* HEADER */
 .hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:1rem;border-bottom:1px solid var(--bd2);margin-bottom:1.2rem;flex-wrap:wrap;gap:.8rem;}
+.brand-row{display:flex;align-items:center;gap:12px;}
+.india-logo{width:54px;height:62px;flex:0 0 auto;filter:drop-shadow(0 0 14px rgba(0,229,160,.32));}
+.india-logo path{fill:rgba(0,229,160,.12);stroke:var(--ac);stroke-width:2;stroke-linejoin:round;}
+.india-logo .pulse{fill:var(--ac);stroke:none;animation:blink 1.8s infinite;}
 .hdr-title{font-family:var(--ti);font-size:clamp(22px,4vw,42px);font-weight:900;letter-spacing:-.02em;}
 .hdr-title span{color:var(--ac);}
 .hdr-sub{font-family:var(--mo);font-size:10px;color:var(--t2);margin-top:4px;line-height:1.6;}
@@ -38,6 +42,7 @@ body::after{content:'Developed by Mohan Sriram Kunamsetty';position:fixed;right:
 .grid-mid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
 .grid-bot{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1rem;}
 @media(max-width:1100px){.grid-top,.grid-mid,.grid-bot{grid-template-columns:1fr;}}
+@media(max-width:640px){.india-logo{width:42px;height:50px}.brand-row{gap:8px}}
 
 /* PANEL */
 .pan{background:var(--s1);border:1px solid var(--bd);border-radius:4px;overflow:hidden;}
@@ -169,7 +174,13 @@ body::after{content:'Developed by Mohan Sriram Kunamsetty';position:fixed;right:
 <div class="hdr">
   <div>
     <div style="font-family:var(--mo);font-size:9px;letter-spacing:.18em;color:var(--ac);border:1px solid rgba(0,229,160,.35);padding:2px 10px;border-radius:2px;display:inline-block;margin-bottom:6px;">◆ DRDO CYBERSECURITY DIVISION</div>
-    <div class="hdr-title">RAK<span>SHAK</span></div>
+    <div class="brand-row">
+      <svg class="india-logo" viewBox="0 0 96 112" role="img" aria-label="India map logo">
+        <path d="M40 4 L51 8 L56 17 L65 20 L69 30 L79 34 L75 43 L83 52 L76 62 L78 72 L68 75 L64 87 L55 90 L51 105 L43 94 L35 92 L31 82 L22 78 L24 66 L14 60 L20 50 L15 40 L24 34 L27 22 L36 18 Z"/>
+        <circle class="pulse" cx="50" cy="57" r="4"/>
+      </svg>
+      <div class="hdr-title">RAK<span>SHAK</span></div>
+    </div>
     <div class="hdr-sub">APK Threat Intelligence Platform v3.0 · Real-Time Analysis · 11 Engines · SriAI</div>
   </div>
   <div class="hdr-pills">
