@@ -220,9 +220,9 @@ class AdvancedPipeline:
             # ════════════════════════════════════════════════════════════
             # PHASE 5: GENAI REASONING
             # ════════════════════════════════════════════════════════════
-            log("GENAI", "Invoking Claude AI semantic reasoning...")
+            log("GENAI", "Invoking SriAI semantic reasoning...")
             emit(EventType.GENAI_THINKING, case_id,
-                 {"engine": "GENAI", "message": "Claude AI analyzing threat semantics..."})
+                 {"engine": "GENAI", "message": "SriAI analyzing threat semantics..."})
 
             code_ctx     = CodeContextBuilder(apk_path).build_context(
                 result["static_analysis"], result["strings"]

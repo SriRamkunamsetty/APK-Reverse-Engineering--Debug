@@ -15,6 +15,10 @@ html,body{background:var(--bg);color:var(--te);font-family:var(--sa);min-height:
 body::before{content:'';position:fixed;inset:0;z-index:0;
   background-image:linear-gradient(rgba(0,229,160,.02)1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.02)1px,transparent 1px);
   background-size:40px 40px;pointer-events:none;}
+body::after{content:'Developed by Mohan Sriram Kunamsetty';position:fixed;right:18px;bottom:12px;z-index:4;
+  font-family:var(--mo);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#040608;
+  background:#ffe066;border:1px solid rgba(255,224,102,.9);box-shadow:0 0 18px rgba(255,224,102,.22);
+  padding:5px 12px;border-radius:3px;pointer-events:none;}
 .app{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:1.2rem 1.5rem;}
 
 /* HEADER */
@@ -137,7 +141,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;
 .qa-lbl{font-size:8px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;}
 .qa-m.u .qa-lbl{color:var(--ac2);}
 .qa-m.a .qa-lbl{color:var(--ac);}
-.qa-txt{color:var(--t2);}
+.qa-txt{color:var(--t2);white-space:pre-wrap;}
 .qa-row{display:flex;gap:6px;}
 .qa-inp{flex:1;background:var(--s2);border:1px solid var(--bd);color:var(--te);font-family:var(--mo);font-size:10px;padding:8px 12px;border-radius:3px;outline:none;}
 .qa-inp:focus{border-color:rgba(0,229,160,.4);}
@@ -166,7 +170,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;
   <div>
     <div style="font-family:var(--mo);font-size:9px;letter-spacing:.18em;color:var(--ac);border:1px solid rgba(0,229,160,.35);padding:2px 10px;border-radius:2px;display:inline-block;margin-bottom:6px;">◆ DRDO CYBERSECURITY DIVISION</div>
     <div class="hdr-title">RAK<span>SHAK</span></div>
-    <div class="hdr-sub">APK Threat Intelligence Platform v3.0 · Real-Time Analysis · 11 Engines · Claude AI</div>
+    <div class="hdr-sub">APK Threat Intelligence Platform v3.0 · Real-Time Analysis · 11 Engines · SriAI</div>
   </div>
   <div class="hdr-pills">
     <div class="pill pill-cls">⬛ SENSITIVE</div>
@@ -218,7 +222,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;
           <div class="eng" id="eng-static"><div class="eng-name">Static</div><div class="eng-status">—</div></div>
           <div class="eng" id="eng-yara"><div class="eng-name">YARA</div><div class="eng-status">—</div></div>
           <div class="eng" id="eng-ml"><div class="eng-name">ML</div><div class="eng-status">—</div></div>
-          <div class="eng" id="eng-genai"><div class="eng-name">Claude AI</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-genai"><div class="eng-name">SriAI</div><div class="eng-status">—</div></div>
           <div class="eng" id="eng-frida"><div class="eng-name">Frida</div><div class="eng-status">—</div></div>
           <div class="eng" id="eng-network"><div class="eng-name">Network</div><div class="eng-status">—</div></div>
           <div class="eng" id="eng-score"><div class="eng-name">Scoring</div><div class="eng-status">—</div></div>
@@ -285,10 +289,10 @@ body::before{content:'';position:fixed;inset:0;z-index:0;
 
   <!-- Q&A AGENT -->
   <div class="pan">
-    <div class="pan-hd"><span class="pan-hd-icon">🤖</span><span class="pan-hd-title">Analyst Q&A</span><span class="pan-hd-badge">CLAUDE AI</span></div>
+    <div class="pan-hd"><span class="pan-hd-icon">🤖</span><span class="pan-hd-title">Analyst Q&A</span><span class="pan-hd-badge">SriAI</span></div>
     <div class="pan-body">
       <div class="qa-msgs" id="qa-msgs">
-        <div class="qa-m a"><div class="qa-lbl">RAKSHAK-AI</div>
+        <div class="qa-m a"><div class="qa-lbl">SriAI</div>
         <div class="qa-txt">Complete an analysis then ask me anything — capabilities, threat actor, attack chain, recommended actions.</div></div>
       </div>
       <div class="qa-row">
@@ -321,6 +325,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;
 // ── STATE ────────────────────────────────────────────────────────────────────
 let file=null,caseId=null,ws=null,result=null,evCount=0;
 const SEV_COLORS={CRITICAL:'#ff3333',HIGH:'#ff9900',MEDIUM:'#ffdd00',LOW:'#44bb44',CLEAN:'#00cc77'};
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 // ── CLOCK ────────────────────────────────────────────────────────────────────
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toUTCString().replace('GMT','UTC');},1000);
@@ -442,6 +447,7 @@ function handleEvent(ev){
     document.getElementById('abtn').disabled=false;
     document.getElementById('qa-btn').disabled=false;
     document.getElementById('pdf-btn').disabled=false;
+    if(caseId)setTimeout(()=>pollResult(caseId),500);
     if(d.final_score){setRing(d.final_score,d.final_score,SEV_COLORS[d.severity]||'#888');}
   }
   if(t==='nation_state_alert'){showAPT(d);}
@@ -473,11 +479,12 @@ function eventSummary(type,d){
 
 // ── RENDER FINAL RESULT ───────────────────────────────────────────────────────
 function renderFinal(data){
-  result=data;
-  const rs=data.risk_score||{},s=data.summary||{};
+  const analysis=data.result||data;
+  result=analysis;
+  const rs=analysis.risk_score||{},s=analysis.summary||{};
   setRing(rs.final_score||0,rs.final_score||0,SEV_COLORS[rs.severity]||'#888');
   setSevBadge(rs.severity);
-  updateSummaryCards({...s,...rs});
+  updateSummaryCards(analysis);
   renderXAI(rs.breakdown||{});
   renderMitre(rs.mitre_techniques||[]);
   if(rs.apt_detected||rs.nation_state)showAPT(rs);
@@ -485,7 +492,7 @@ function renderFinal(data){
   document.getElementById('qa-btn').disabled=false;
   document.getElementById('pdf-btn').disabled=false;
   document.getElementById('job-badge').textContent='COMPLETE';
-  renderIOCs(data.strings||{});
+  renderIOCs(analysis);
 }
 
 function downloadPDF(){
@@ -493,14 +500,23 @@ function downloadPDF(){
   window.open('/api/report/'+encodeURIComponent(caseId)+'/pdf','_blank');
 }
 
-function updateSummaryCards(d){
+function updateSummaryCards(data){
+  const d=data.summary?{...data.summary,...(data.risk_score||{})}:data;
+  const strings=data.strings||{};
+  const staticFindings=data.static_analysis||{};
+  const urlCount=(strings.urls||[]).length;
+  const ipCount=(strings.ips||[]).length;
+  const emailCount=(strings.emails||[]).length;
+  const tokenCount=(strings.telegram_tokens||[]).length;
+  const iocCount=d.c2_indicators ?? (urlCount+ipCount+emailCount+tokenCount);
+  const vulnFindings=staticFindings.vulnerabilities?.findings||[];
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('ic-score',(d.final_score||d.risk_score||'—'));
   set('ic-sev',d.severity||'—');
   set('ic-fam',(d.primary_family||'—').split('/')[0].split(' ')[0]);
-  set('ic-find',d.total_findings||'—');
-  set('ic-vulns',d.critical_vulns||'—');
-  set('ic-iocs',d.c2_indicators||'—');
+  set('ic-find',d.total_findings ?? staticFindings.total_findings ?? '—');
+  set('ic-vulns',d.critical_vulns ?? vulnFindings.filter(v=>v.severity==='CRITICAL').length);
+  set('ic-iocs',iocCount);
 }
 
 function renderXAI(bd){
@@ -521,12 +537,16 @@ function renderMitre(techniques){
     '<div style="font-family:var(--mo);font-size:10px;color:var(--t3);">None mapped</div>';
 }
 
-function renderIOCs(strings){
+function renderIOCs(data){
+  const strings=data.strings||data||{};
+  const net=data.network_intelligence||{};
+  const confirmed=net.confirmed_c2||[];
   const items=[
-    ...(strings.ips||[]).map(i=>`<div class="ioc-item"><span class="ioc-tag">IP/C2</span><span class="ioc-val">${i.ip} — ${i.type}</span></div>`),
-    ...(strings.urls||[]).slice(0,10).map(u=>`<div class="ioc-item"><span class="ioc-tag">URL</span><span class="ioc-val">[${u.risk}] ${u.url.slice(0,80)}</span></div>`),
-    ...(strings.telegram_tokens||[]).map(t=>`<div class="ioc-item"><span class="ioc-tag">TG-C2</span><span class="ioc-val">${t}</span></div>`),
-    ...(strings.emails||[]).map(e=>`<div class="ioc-item"><span class="ioc-tag">EMAIL</span><span class="ioc-val">${e}</span></div>`),
+    ...confirmed.map(c=>`<div class="ioc-item"><span class="ioc-tag">C2</span><span class="ioc-val">${esc(c.indicator||c.value||c)}</span></div>`),
+    ...(strings.ips||[]).map(i=>`<div class="ioc-item"><span class="ioc-tag">IP/C2</span><span class="ioc-val">${esc(i.ip||i)} — ${esc(i.type||'extracted')}</span></div>`),
+    ...(strings.urls||[]).slice(0,20).map(u=>`<div class="ioc-item"><span class="ioc-tag">URL</span><span class="ioc-val">[${esc(u.risk||'IOC')}] ${esc(String(u.url||u).slice(0,120))}</span></div>`),
+    ...(strings.telegram_tokens||[]).map(t=>`<div class="ioc-item"><span class="ioc-tag">TG-C2</span><span class="ioc-val">${esc(t)}</span></div>`),
+    ...(strings.emails||[]).map(e=>`<div class="ioc-item"><span class="ioc-tag">EMAIL</span><span class="ioc-val">${esc(e)}</span></div>`),
   ];
   document.getElementById('ioc-list').innerHTML=items.join('')||
     '<div style="font-family:var(--mo);font-size:10px;color:var(--t3);">No IOCs extracted</div>';
@@ -609,8 +629,8 @@ async function sendQ(){
   if(!q||!caseId)return;
   inp.value='';
   const msgs=document.getElementById('qa-msgs');
-  msgs.innerHTML+=`<div class="qa-m u"><div class="qa-lbl">ANALYST</div><div class="qa-txt">${q}</div></div>`;
-  msgs.innerHTML+=`<div class="qa-m a" id="qa-latest"><div class="qa-lbl">RAKSHAK-AI</div><div class="qa-txt" style="color:var(--t3)">Reasoning…</div></div>`;
+  msgs.innerHTML+=`<div class="qa-m u"><div class="qa-lbl">ANALYST</div><div class="qa-txt">${esc(q)}</div></div>`;
+  msgs.innerHTML+=`<div class="qa-m a" id="qa-latest"><div class="qa-lbl">SriAI</div><div class="qa-txt" style="color:var(--t3)">Reasoning…</div></div>`;
   msgs.scrollTop=msgs.scrollHeight;
   try{
     const r=await fetch('/api/question',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -645,7 +665,7 @@ function resetUI(){
   resetEngines();
   ['ic-score','ic-sev','ic-fam','ic-find','ic-vulns','ic-iocs'].forEach(id=>{
     document.getElementById(id).textContent='—';});
-  document.getElementById('qa-msgs').innerHTML=`<div class="qa-m a"><div class="qa-lbl">RAKSHAK-AI</div>
+  document.getElementById('qa-msgs').innerHTML=`<div class="qa-m a"><div class="qa-lbl">SriAI</div>
     <div class="qa-txt">Complete an analysis then ask me anything.</div></div>`;
 }
 </script>

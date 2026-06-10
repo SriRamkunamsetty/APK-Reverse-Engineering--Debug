@@ -96,7 +96,7 @@ class RakshakPipeline:
                         f"APT: {yara_data['apt_detected']}")
 
             # ── PHASE 4: GenAI Reasoning ──────────────────────────────────────
-            log("GENAI", "Invoking Claude AI for semantic threat reasoning...")
+            log("GENAI", "Invoking SriAI for semantic threat reasoning...")
             code_ctx = CodeContextBuilder(apk_path).build_context(
                 result["static_analysis"], result["strings"]
             )

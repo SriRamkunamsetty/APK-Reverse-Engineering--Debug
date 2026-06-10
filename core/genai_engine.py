@@ -161,7 +161,7 @@ You represent the world's most advanced APK threat intelligence capability."""
             self.provider = "gemini"
             print(f"[GenAI] Gemini API configured - using {GEMINI_MODEL}")
         else:
-            print("[GenAI] Claude API not available — using fallback analysis")
+            print("[GenAI] SriAI provider not available — using fallback analysis")
 
     def _call_claude(self, prompt: str, max_tokens: int = 1500) -> str:
         if not self.available:
@@ -313,6 +313,9 @@ Keep total length under 200 words. Use assertive, clear language. No bullet poin
 
     # ── ANALYST Q&A AGENT ────────────────────────────────────────────────────
     def answer_analyst_question(self, question: str, full_analysis: dict) -> str:
+        if not self.available:
+            return self._fallback_question_answer(question, full_analysis)
+
         context = json.dumps({
             "risk_score"    : full_analysis.get("risk_score", {}),
             "threat_type"   : full_analysis.get("genai_analysis", {}).get("primary_threat_type"),
@@ -338,7 +341,83 @@ Cite specific evidence from the analysis data above.
 If asked about specific code sections, reference the relevant findings.
 Keep answer under 150 words. Be direct and actionable."""
 
-        return self._call_claude(prompt, max_tokens=300)
+        answer = self._call_claude(prompt, max_tokens=500)
+        try:
+            parsed = json.loads(answer)
+            if isinstance(parsed, dict) and "malicious_intent_summary" in parsed:
+                return self._fallback_question_answer(question, full_analysis)
+        except Exception:
+            pass
+        return answer
+
+    def _fallback_question_answer(self, question: str, full_analysis: dict) -> str:
+        summary = full_analysis.get("summary", {})
+        risk = full_analysis.get("risk_score", {})
+        strings = full_analysis.get("strings", {})
+        static = full_analysis.get("static_analysis", {})
+        yara = full_analysis.get("yara_analysis", {})
+        dynamic = full_analysis.get("dynamic_analysis", {})
+        genai = full_analysis.get("genai_analysis", {})
+
+        families = yara.get("malware_families", []) or [summary.get("primary_family")]
+        families = [f for f in families if f]
+        urls = strings.get("urls", [])
+        ips = strings.get("ips", [])
+        emails = strings.get("emails", [])
+        phones = strings.get("hardcoded_phones", [])
+        banks = strings.get("bank_references", [])
+        commands = strings.get("shell_commands", [])
+        crypto = strings.get("crypto_keys", [])
+        vuln_findings = static.get("vulnerabilities", {}).get("findings", [])
+        crypto_findings = static.get("crypto_analysis", {}).get("findings", [])
+        banking = static.get("banking_threats", {})
+        dyn_findings = dynamic.get("all_findings", [])
+
+        q = question.lower()
+        focus = []
+        if any(term in q for term in ["steal", "data", "credential", "otp", "sms"]):
+            focus.append("Data at risk: " + ", ".join(genai.get("data_at_risk", []) or [
+                "banking credentials", "SMS/OTP data", "personal identifiers"
+            ]))
+            if phones:
+                focus.append(f"Evidence includes {len(phones)} hardcoded phone-like values.")
+            if banks:
+                focus.append(f"The string scan found {len(banks)} banking/financial references.")
+        elif any(term in q for term in ["network", "ioc", "url", "domain", "ip", "c2"]):
+            focus.append(f"Network evidence: {len(urls)} URLs, {len(ips)} IPs, and {len(emails)} email indicators were extracted.")
+            if urls:
+                focus.append("Top URL samples: " + "; ".join(str(u.get("url", u))[:90] for u in urls[:3]))
+        elif any(term in q for term in ["family", "actor", "apt", "who"]):
+            focus.append("Matched malware/intel families: " + (", ".join(families[:8]) if families else "no named family confirmed."))
+            focus.append(f"APT/nation-state flags: APT={bool(risk.get('apt_detected') or summary.get('apt_detected'))}, nation_state={bool(risk.get('nation_state') or summary.get('nation_state'))}.")
+        elif any(term in q for term in ["action", "recommend", "mitigate", "block"]):
+            focus.append("Recommended actions: quarantine the APK, block extracted suspicious URLs/domains, preserve the sample and report, review affected devices, and escalate to SOC/CERT-In if deployed to users.")
+        else:
+            focus.append(f"Risk is {risk.get('final_score', summary.get('risk_score', 'unknown'))}/100 with severity {risk.get('severity', summary.get('severity', 'unknown'))}.")
+            focus.append("Primary family/type: " + (summary.get("primary_family") or genai.get("primary_threat_type") or "manual review required."))
+
+        evidence = [
+            f"Static findings: {summary.get('total_findings', static.get('total_findings', 0))}",
+            f"YARA matches: {len(yara.get('matches', []))}",
+            f"URLs: {len(urls)}",
+            f"Dynamic findings: {len(dyn_findings)}",
+            f"Vulnerabilities: {len(vuln_findings)}",
+            f"Crypto indicators: {len(crypto_findings) or len(crypto)}",
+            f"Shell commands: {len(commands)}",
+        ]
+
+        if banking:
+            banking_hits = [k for k, v in banking.items() if v is True or (isinstance(v, list) and v)]
+            if banking_hits:
+                evidence.append("Banking threat markers: " + ", ".join(banking_hits[:5]))
+
+        return (
+            "SriAI answer based on the completed RAKSHAK report:\n\n"
+            + "\n".join(f"- {item}" for item in focus)
+            + "\n\nEvidence used:\n"
+            + "\n".join(f"- {item}" for item in evidence)
+            + "\n\nAnalyst note: this is a local evidence-based explanation. Configure GEMINI_API_KEY for deeper generative reasoning."
+        )
 
     # ── OBFUSCATION DEOBFUSCATOR HINT ────────────────────────────────────────
     def interpret_obfuscated_class(self, class_name: str, methods: list[str]) -> str:
@@ -364,15 +443,15 @@ Return ONLY the one-sentence answer."""
             "attack_chain"           : ["Install", "Request permissions", "Execute payload"],
             "data_at_risk"           : ["Banking credentials", "SMS/OTP", "Personal data"],
             "apt_attribution"        : None,
-            "zero_day_indicators"    : "Cannot assess without GenAI — configure ANTHROPIC_API_KEY",
+            "zero_day_indicators"    : "Cannot assess without GenAI — configure GEMINI_API_KEY",
             "immediate_actions"      : [
                 "Quarantine the APK immediately",
                 "Block associated domains and IPs",
                 "Submit to CERT-In for national threat assessment",
-                "Configure ANTHROPIC_API_KEY for full GenAI analysis"
+                "Configure GEMINI_API_KEY for full GenAI analysis"
             ],
             "intelligence_confidence": "MEDIUM",
-            "analyst_notes"          : "Set ANTHROPIC_API_KEY environment variable for Claude AI reasoning."
+            "analyst_notes"          : "Set GEMINI_API_KEY environment variable for SriAI reasoning."
         })
 
     @staticmethod

@@ -190,7 +190,7 @@ async def list_jobs():
 
 @app.post("/api/question", response_model=QuestionResponse)
 async def analyst_question(req: QuestionRequest):
-    """Analyst Q&A — ask Claude about a completed analysis"""
+    """Analyst Q&A — ask SriAI about a completed analysis"""
     job = JOBS.get(req.case_id)
     if not job:
         report_path = REPORT_DIR / f"{req.case_id}.json"
