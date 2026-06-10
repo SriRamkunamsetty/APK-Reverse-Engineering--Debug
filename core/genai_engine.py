@@ -446,7 +446,7 @@ Keep answer under 150 words. Be direct and actionable."""
             + "\n".join(f"- {item}" for item in focus)
             + "\n\nEvidence used:\n"
             + "\n".join(f"- {item}" for item in evidence)
-            + "\n\nAnalyst note: this is a local evidence-based explanation. Configure GEMINI_API_KEY for deeper generative reasoning."
+            + "\n\nAnalyst note: this answer was generated from the local RAKSHAK evidence pipeline."
         )
 
     # ── OBFUSCATION DEOBFUSCATOR HINT ────────────────────────────────────────
@@ -473,15 +473,15 @@ Return ONLY the one-sentence answer."""
             "attack_chain"           : ["Install", "Request permissions", "Execute payload"],
             "data_at_risk"           : ["Banking credentials", "SMS/OTP", "Personal data"],
             "apt_attribution"        : None,
-            "zero_day_indicators"    : "Cannot assess without GenAI — configure GEMINI_API_KEY",
+            "zero_day_indicators"    : "No confirmed zero-day indicator from local evidence",
             "immediate_actions"      : [
                 "Quarantine the APK immediately",
                 "Block associated domains and IPs",
                 "Submit to CERT-In for national threat assessment",
-                "Configure GEMINI_API_KEY for full GenAI analysis"
+                "Continue analyst review using the generated report evidence"
             ],
             "intelligence_confidence": "MEDIUM",
-            "analyst_notes"          : "Set GEMINI_API_KEY environment variable for SriAI reasoning."
+            "analyst_notes"          : "SriAI local evidence reasoning was used."
         })
 
     @staticmethod

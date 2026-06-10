@@ -377,6 +377,15 @@ class TechnicalReportGenerator:
         story = section_header('APK Fingerprints & Metadata')
         m = data.get('manifest', {})
         c = data.get('certificates', {})
+        h = data.get('hashes', {})
+        s = data.get('structure', {})
+        missing = 'Not extracted'
+
+        def val(value):
+            return value if value not in (None, '') else missing
+
+        cert_state = 'Self-signed' if c.get('self_signed') else ('CA-signed' if c else missing)
+        native_archs = ', '.join(s.get('native_arch_coverage', [])) or missing
         pairs = [
             ('Package Name',    m.get('package_name', '—')),
             ('Version Code',    m.get('version_code', '—')),
@@ -388,6 +397,15 @@ class TechnicalReportGenerator:
             ('Multidex',        'Yes' if data.get('structure',{}).get('multidex') else 'No'),
             ('Native Archs',    ', '.join(data.get('structure',{}).get('native_arch_coverage',[]))),
         ]
+        pairs = [(label, val(value)) for label, value in pairs]
+        pairs = [
+            ('APK Filename', data.get('apk_name', missing)),
+            ('Manifest Parser', 'OK' if m.get('package_name') or m.get('permissions') else 'Manifest metadata not extracted'),
+            ('APK Size', h.get('size_human', missing)),
+            ('SHA-256', h.get('sha256', missing)),
+            ('Total Files', s.get('total_files', missing)),
+            ('DEX Files', len(s.get('dex_files', []))),
+        ] + pairs
         story.append(kv_table(pairs))
         return story
 
