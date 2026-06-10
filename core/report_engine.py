@@ -5,6 +5,7 @@ Chain-of-custody compliant, FIR-admissible
 """
 
 import os
+from html import escape
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -98,19 +99,6 @@ class ReportCanvas:
         canvas.saveState()
         w, h = A4
 
-        # Prominent developer watermark across every report page.
-        canvas.saveState()
-        try:
-            canvas.setFillAlpha(0.08)
-        except Exception:
-            pass
-        canvas.setFillColor(C_ACCENT)
-        canvas.setFont('Helvetica-Bold', 30)
-        canvas.translate(w / 2, h / 2)
-        canvas.rotate(35)
-        canvas.drawCentredString(0, 0, DEVELOPER_CREDIT)
-        canvas.restoreState()
-
         # Left accent bar
         canvas.setFillColor(C_ACCENT)
         canvas.rect(0, 0, 4*mm, h, stroke=0, fill=1)
@@ -136,12 +124,9 @@ class ReportCanvas:
         canvas.rect(0, 0, w, 10*mm, stroke=0, fill=1)
         canvas.setFont('Courier', 7)
         canvas.setFillColor(colors.HexColor('#00C896'))
-        canvas.drawString(6*mm, 3.5*mm, f'RAKSHAK v{PLATFORM_VERSION} | {ORGANISATION}')
+        canvas.drawString(6*mm, 3.5*mm, f'RAKSHAK v{PLATFORM_VERSION}')
         canvas.drawCentredString(w/2, 3.5*mm, f'CASE: {self.case_id}')
         canvas.drawRightString(w - 6*mm, 3.5*mm, f'Page {canvas.getPageNumber()}')
-        canvas.setFont('Helvetica-Bold', 7.5)
-        canvas.setFillColor(colors.HexColor('#FFE066'))
-        canvas.drawCentredString(w/2, 7.2*mm, DEVELOPER_CREDIT)
 
         canvas.restoreState()
 
@@ -182,26 +167,31 @@ def kv_table(pairs: list[tuple], col_widths=None) -> Table:
 
 def findings_table(headers: list, rows: list, col_widths=None) -> Table:
     """Styled findings table with header row"""
-    data = [headers] + rows
+    header_style = ParagraphStyle('th', fontName='Helvetica-Bold', fontSize=8,
+                                  textColor=C_ACCENT, leading=10)
+    cell_style = ParagraphStyle('td', fontName='Helvetica', fontSize=8,
+                                textColor=C_TEXT, leading=10)
+    data = [
+        [Paragraph(escape(str(h)), header_style) for h in headers]
+    ] + [
+        [Paragraph(escape(str(cell)), cell_style) for cell in row]
+        for row in rows
+    ]
     cw   = col_widths or [4*cm, 2.5*cm, 9.5*cm]
     t    = Table(data, colWidths=cw, repeatRows=1)
     t.setStyle(TableStyle([
         # Header
         ('BACKGROUND',  (0,0), (-1,0), C_HEADER),
         ('TEXTCOLOR',   (0,0), (-1,0), C_ACCENT),
-        ('FONTNAME',    (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE',    (0,0), (-1,0), 8),
         ('BOTTOMPADDING',(0,0),(-1,0), 7),
         ('TOPPADDING',  (0,0),(-1,0), 7),
-        # Body
-        ('FONTNAME',    (0,1), (-1,-1), 'Helvetica'),
-        ('FONTSIZE',    (0,1), (-1,-1), 8.5),
         ('GRID',        (0,0), (-1,-1), 0.3, C_BORDER),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, C_ROW_ALT]),
         ('VALIGN',      (0,0), (-1,-1), 'TOP'),
-        ('TOPPADDING',  (0,1), (-1,-1), 5),
-        ('BOTTOMPADDING',(0,1),(-1,-1), 5),
+        ('TOPPADDING',  (0,1), (-1,-1), 6),
+        ('BOTTOMPADDING',(0,1),(-1,-1), 6),
         ('LEFTPADDING', (0,0), (-1,-1), 7),
+        ('RIGHTPADDING',(0,0), (-1,-1), 7),
     ]))
     return t
 
@@ -210,9 +200,9 @@ def score_box(score: int, severity: str) -> Table:
     """Big score display box"""
     col = sev_color(severity)
     data = [[
-        Paragraph(f'<font size="36"><b>{score}</b></font><font size="14">/100</font>',
-                  ParagraphStyle('sc', fontName='Helvetica-Bold', fontSize=36,
-                                 textColor=col, alignment=TA_CENTER)),
+        Paragraph(f'<font size="32"><b>{score}</b></font><font size="12"><b>/100</b></font>',
+                  ParagraphStyle('sc', fontName='Helvetica-Bold', fontSize=32,
+                                 textColor=col, alignment=TA_CENTER, leading=34)),
         Paragraph(f'<b>{severity}</b>',
                   ParagraphStyle('sv', fontName='Helvetica-Bold', fontSize=18,
                                  textColor=col, alignment=TA_CENTER, leading=22)),
@@ -221,8 +211,8 @@ def score_box(score: int, severity: str) -> Table:
     t.setStyle(TableStyle([
         ('BOX',      (0,0), (-1,-1), 2, col),
         ('VALIGN',   (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING',(0,0),(-1,-1), 14),
-        ('BOTTOMPADDING',(0,0),(-1,-1), 14),
+        ('TOPPADDING',(0,0),(-1,-1), 10),
+        ('BOTTOMPADDING',(0,0),(-1,-1), 10),
         ('BACKGROUND',(0,0),(-1,-1), colors.HexColor('#F8FFF8')),
     ]))
     return t
@@ -248,7 +238,7 @@ class TechnicalReportGenerator:
             leftMargin      = 2*cm,
             rightMargin     = 1.5*cm,
             topMargin       = 2*cm,
-            bottomMargin    = 1.8*cm,
+            bottomMargin    = 2.7*cm,
             title           = f'RAKSHAK Technical Report — {case}',
             author          = ORGANISATION,
         )
