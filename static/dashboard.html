@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAKSHAK v3.0 — DRDO APK Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#040608;--s1:#09111c;--s2:#0f1d2b;--s3:#162538;
+--ac:#00e5a0;--ac2:#00aaff;--ac3:#a855f7;--re:#ff3333;--wa:#ff9900;
+--te:#d4f0d4;--t2:#7a9a8a;--t3:#2a4a3a;--bd:rgba(0,229,160,.12);--bd2:rgba(0,229,160,.3);
+--mo:'Share Tech Mono',monospace;--ti:'Orbitron',sans-serif;--sa:'Syne',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--te);font-family:var(--sa);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(0,229,160,.02)1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.02)1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;}
+.app{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:1.2rem 1.5rem;}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:1rem;border-bottom:1px solid var(--bd2);margin-bottom:1.2rem;flex-wrap:wrap;gap:.8rem;}
+.hdr-title{font-family:var(--ti);font-size:clamp(22px,4vw,42px);font-weight:900;letter-spacing:-.02em;}
+.hdr-title span{color:var(--ac);}
+.hdr-sub{font-family:var(--mo);font-size:10px;color:var(--t2);margin-top:4px;line-height:1.6;}
+.hdr-pills{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+.pill{font-family:var(--mo);font-size:9px;padding:4px 12px;border-radius:2px;border:1px solid;letter-spacing:.1em;}
+.pill-on{border-color:var(--ac);color:var(--ac);background:rgba(0,229,160,.08);}
+.pill-cls{border-color:var(--re);color:var(--re);background:rgba(255,51,51,.08);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.blink{animation:blink 1.8s infinite;}
+
+/* LAYOUT GRID */
+.grid-top{display:grid;grid-template-columns:1.1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.grid-mid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.grid-bot{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1rem;}
+@media(max-width:1100px){.grid-top,.grid-mid,.grid-bot{grid-template-columns:1fr;}}
+
+/* PANEL */
+.pan{background:var(--s1);border:1px solid var(--bd);border-radius:4px;overflow:hidden;}
+.pan-hd{display:flex;align-items:center;gap:8px;padding:9px 14px;background:rgba(0,229,160,.04);border-bottom:1px solid var(--bd);}
+.pan-hd-icon{font-size:15px;color:var(--ac);}
+.pan-hd-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.pan-hd-badge{margin-left:auto;font-family:var(--mo);font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid var(--bd2);color:var(--ac);}
+.pan-body{padding:14px;}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed rgba(0,229,160,.2);border-radius:4px;padding:1.5rem;text-align:center;cursor:pointer;transition:.2s;margin-bottom:10px;}
+.upload-zone:hover,.upload-zone.over{border-color:var(--ac);background:rgba(0,229,160,.04);}
+.upload-icon{font-size:36px;color:var(--ac);margin-bottom:8px;display:block;}
+.upload-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+.upload-sub{font-family:var(--mo);font-size:10px;color:var(--t2);}
+#fi{display:none;}
+.inp{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--te);font-family:var(--mo);font-size:11px;padding:9px 12px;border-radius:3px;margin-bottom:8px;outline:none;}
+.inp:focus{border-color:rgba(0,229,160,.45);}
+.row{display:flex;gap:8px;}
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--mo);font-size:10px;font-weight:700;padding:9px 18px;border-radius:3px;border:1px solid;cursor:pointer;transition:.15s;letter-spacing:.06em;text-transform:uppercase;}
+.btn-p{background:var(--ac);color:#040608;border-color:var(--ac);}
+.btn-p:hover{background:#00ffb3;}
+.btn-o{background:transparent;color:var(--ac);border-color:rgba(0,229,160,.35);}
+.btn-o:hover{background:rgba(0,229,160,.08);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.file-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.25);border-radius:3px;font-family:var(--mo);font-size:10px;margin-bottom:8px;}
+.file-chip-nm{color:var(--te);flex:1;}
+.file-chip-sz{color:var(--t2);}
+
+/* ENGINE STATUS GRID */
+.engines{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.eng{background:var(--s2);border:1px solid var(--bd);border-radius:3px;padding:8px 10px;text-align:center;transition:.3s;}
+.eng.active{border-color:var(--ac);background:rgba(0,229,160,.07);}
+.eng.done{border-color:rgba(0,229,160,.5);background:rgba(0,229,160,.05);}
+.eng.warn{border-color:var(--re);background:rgba(255,51,51,.06);}
+.eng-name{font-family:var(--mo);font-size:9px;color:var(--t2);letter-spacing:.06em;text-transform:uppercase;}
+.eng-status{font-size:10px;margin-top:3px;color:var(--t3);}
+.eng.active .eng-status{color:var(--ac);}
+.eng.done .eng-status{color:var(--ac);}
+.eng.warn .eng-status{color:var(--re);}
+
+/* SCORE RING */
+.score-wrap{text-align:center;padding:1.2rem 0;}
+.ring-cont{width:180px;height:180px;margin:0 auto 1rem;position:relative;}
+.ring-cont svg{width:100%;height:100%;transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:rgba(0,229,160,.08);stroke-width:10;}
+.ring-fill{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:502;stroke-dashoffset:502;transition:stroke-dashoffset 1.4s ease,stroke .6s;}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-num{font-family:var(--ti);font-size:46px;font-weight:900;line-height:1;color:var(--ac);transition:color .6s;}
+.ring-max{font-family:var(--mo);font-size:10px;color:var(--t2);}
+.sev-badge{font-family:var(--ti);font-size:16px;font-weight:900;letter-spacing:.08em;padding:7px 20px;border-radius:3px;border:2px solid var(--ac);color:var(--ac);display:inline-block;margin-bottom:.8rem;transition:all .5s;}
+
+/* XAI BARS */
+.xai-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.xai-lbl{font-family:var(--mo);font-size:9px;color:var(--t2);min-width:120px;flex-shrink:0;text-transform:uppercase;}
+.xai-bar{flex:1;height:5px;background:rgba(0,229,160,.07);border-radius:3px;overflow:hidden;}
+.xai-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--ac),var(--ac2));width:0;transition:width 1.1s ease;}
+.xai-pts{font-family:var(--mo);font-size:9px;color:var(--ac);min-width:32px;text-align:right;}
+
+/* EVENT FEED */
+.feed{height:240px;overflow-y:auto;background:var(--bg);border:1px solid var(--bd);border-radius:3px;padding:10px;font-family:var(--mo);font-size:10px;}
+.ev{display:flex;gap:8px;margin-bottom:6px;line-height:1.4;border-bottom:1px solid rgba(0,229,160,.05);padding-bottom:5px;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ev-time{color:var(--t3);flex-shrink:0;min-width:46px;}
+.ev-type{min-width:80px;flex-shrink:0;font-weight:700;}
+.ev-msg{color:var(--t2);flex:1;}
+.ev-CRITICAL .ev-type{color:var(--re);}
+.ev-HIGH .ev-type{color:var(--wa);}
+.ev-INFO .ev-type{color:var(--ac);}
+.ev-MEDIUM .ev-type{color:#ffdd00;}
+
+/* FINDINGS TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:10.5px;}
+.tbl th{background:rgba(0,229,160,.07);color:var(--ac);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--bd2);}
+.tbl td{padding:7px 10px;border-bottom:1px solid var(--bd);color:var(--t2);vertical-align:top;}
+.tbl td:first-child{color:var(--te);font-family:var(--mo);}
+.tbl tr:hover td{background:rgba(0,229,160,.02);}
+.chip{display:inline-block;font-family:var(--mo);font-size:8px;padding:2px 7px;border-radius:2px;border:1px solid;letter-spacing:.05em;text-transform:uppercase;}
+.chip-c{background:rgba(255,51,51,.12);color:var(--re);border-color:rgba(255,51,51,.3);}
+.chip-h{background:rgba(255,153,0,.1);color:var(--wa);border-color:rgba(255,153,0,.25);}
+.chip-m{background:rgba(255,220,0,.08);color:#ffdd00;border-color:rgba(255,220,0,.25);}
+
+/* IOC LIST */
+.ioc-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mo);font-size:10px;}
+.ioc-tag{font-size:8px;padding:2px 7px;border-radius:2px;flex-shrink:0;background:rgba(0,170,255,.1);color:var(--ac2);border:1px solid rgba(0,170,255,.25);}
+.ioc-val{color:var(--t2);word-break:break-all;}
+
+/* APT ALERT */
+.apt-alert{background:rgba(255,51,51,.06);border:1px solid rgba(255,51,51,.35);border-radius:4px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;margin-bottom:1rem;}
+.apt-icon{font-size:22px;color:var(--re);flex-shrink:0;}
+.apt-title{font-family:var(--ti);font-size:13px;font-weight:700;color:var(--re);margin-bottom:4px;}
+.apt-body{font-size:11px;color:var(--t2);}
+
+/* MITRE */
+.mitre-wrap{display:flex;flex-wrap:wrap;gap:5px;}
+.mitre-tag{font-family:var(--mo);font-size:9px;padding:3px 9px;border-radius:2px;background:rgba(168,85,247,.1);color:var(--ac3);border:1px solid rgba(168,85,247,.25);}
+
+/* Q&A */
+.qa-msgs{height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--bd);border-radius:3px;padding:10px;font-family:var(--mo);font-size:10px;margin-bottom:8px;}
+.qa-m{margin-bottom:10px;line-height:1.55;}
+.qa-lbl{font-size:8px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;}
+.qa-m.u .qa-lbl{color:var(--ac2);}
+.qa-m.a .qa-lbl{color:var(--ac);}
+.qa-txt{color:var(--t2);}
+.qa-row{display:flex;gap:6px;}
+.qa-inp{flex:1;background:var(--s2);border:1px solid var(--bd);color:var(--te);font-family:var(--mo);font-size:10px;padding:8px 12px;border-radius:3px;outline:none;}
+.qa-inp:focus{border-color:rgba(0,229,160,.4);}
+
+/* INFO CARDS */
+.ic-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.ic{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:10px 12px;position:relative;overflow:hidden;}
+.ic::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.ic.g::before{background:var(--ac);}
+.ic.b::before{background:var(--ac2);}
+.ic.r::before{background:var(--re);}
+.ic.w::before{background:var(--wa);}
+.ic.p::before{background:var(--ac3);}
+.ic-val{font-family:var(--ti);font-size:22px;font-weight:700;margin-bottom:2px;}
+.ic-lbl{font-family:var(--mo);font-size:8.5px;color:var(--t2);letter-spacing:.06em;text-transform:uppercase;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--t3);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div style="font-family:var(--mo);font-size:9px;letter-spacing:.18em;color:var(--ac);border:1px solid rgba(0,229,160,.35);padding:2px 10px;border-radius:2px;display:inline-block;margin-bottom:6px;">◆ DRDO CYBERSECURITY DIVISION</div>
+    <div class="hdr-title">RAK<span>SHAK</span></div>
+    <div class="hdr-sub">APK Threat Intelligence Platform v3.0 · Real-Time Analysis · 11 Engines · Claude AI</div>
+  </div>
+  <div class="hdr-pills">
+    <div class="pill pill-cls">⬛ SENSITIVE</div>
+    <div class="pill pill-on"><span class="blink">●</span> SYSTEM ONLINE</div>
+    <div style="font-family:var(--mo);font-size:9px;color:var(--t2);text-align:right;" id="clock"></div>
+  </div>
+</div>
+
+<!-- APT ALERT -->
+<div class="apt-alert" id="apt-alert" style="display:none;">
+  <div class="apt-icon">⚠</div>
+  <div><div class="apt-alert-title">NATION-STATE / APT THREAT DETECTED</div>
+  <div class="apt-body" id="apt-body">Escalate immediately to DRDO NOC, CERT-In, and NTRO.</div></div>
+</div>
+
+<!-- ROW 1: Upload + Engine Status | Score + XAI -->
+<div class="grid-top">
+
+  <!-- UPLOAD PANEL -->
+  <div class="pan">
+    <div class="pan-hd"><span class="pan-hd-icon">⬆</span><span class="pan-hd-title">APK Submission</span><span class="pan-hd-badge" id="job-badge">IDLE</span></div>
+    <div class="pan-body">
+      <input class="inp" id="analyst" placeholder="Analyst ID (e.g. DRDO-SOC-01)">
+      <div class="upload-zone" id="uz" onclick="document.getElementById('fi').click()">
+        <input type="file" id="fi" accept=".apk" onchange="setFile(this.files[0])">
+        <span class="upload-icon">🛡</span>
+        <div class="upload-title">Drop APK or click to browse</div>
+        <div class="upload-sub">.apk only · max 200MB · isolated analysis</div>
+      </div>
+      <div class="file-chip" id="fc" style="display:none;">
+        <span>📦</span>
+        <span class="file-chip-nm" id="fn"></span>
+        <span class="file-chip-sz" id="fs"></span>
+      </div>
+      <div class="row">
+        <button class="btn btn-p" id="abtn" onclick="startAnalysis()" disabled>▶ ANALYZE</button>
+        <button class="btn btn-o" onclick="resetUI()">↺ RESET</button>
+      </div>
+      <div style="margin-top:10px;font-family:var(--mo);font-size:9px;color:var(--t2);" id="cid-disp"></div>
+
+      <!-- ENGINE STATUS -->
+      <div style="margin-top:12px;">
+        <div style="font-family:var(--mo);font-size:9px;color:var(--t2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">Engine Status</div>
+        <div class="engines" id="engines">
+          <div class="eng" id="eng-hash"><div class="eng-name">Hash</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-struct"><div class="eng-name">Structure</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-manifest"><div class="eng-name">Manifest</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-static"><div class="eng-name">Static</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-yara"><div class="eng-name">YARA</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-ml"><div class="eng-name">ML</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-genai"><div class="eng-name">Claude AI</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-frida"><div class="eng-name">Frida</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-network"><div class="eng-name">Network</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-score"><div class="eng-name">Scoring</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-stix"><div class="eng-name">STIX</div><div class="eng-status">—</div></div>
+          <div class="eng" id="eng-misp"><div class="eng-name">MISP</div><div class="eng-status">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCORE PANEL -->
+  <div class="pan">
+    <div class="pan-hd"><span class="pan-hd-icon">◉</span><span class="pan-hd-title">Risk Score — XAI</span><span class="pan-hd-badge">LIVE</span></div>
+    <div class="pan-body">
+      <div class="score-wrap">
+        <div class="ring-cont">
+          <svg viewBox="0 0 180 180">
+            <circle class="ring-bg" cx="90" cy="90" r="80"/>
+            <circle class="ring-fill" id="ring" cx="90" cy="90" r="80"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-num" id="rnum">—</div>
+            <div class="ring-max">/100</div>
+          </div>
+        </div>
+        <div class="sev-badge" id="sev-badge">AWAITING</div>
+      </div>
+      <div id="xai-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 2: Summary Cards -->
+<div class="ic-grid" style="margin-bottom:1rem;">
+  <div class="ic g"><div class="ic-val" id="ic-score">—</div><div class="ic-lbl">Risk Score</div></div>
+  <div class="ic r"><div class="ic-val" id="ic-sev">—</div><div class="ic-lbl">Severity</div></div>
+  <div class="ic b"><div class="ic-val" id="ic-fam" style="font-size:13px;margin-top:4px;">—</div><div class="ic-lbl">Malware Family</div></div>
+  <div class="ic w"><div class="ic-val" id="ic-find">—</div><div class="ic-lbl">Findings</div></div>
+  <div class="ic r"><div class="ic-val" id="ic-vulns">—</div><div class="ic-lbl">Critical Vulns</div></div>
+  <div class="ic p"><div class="ic-val" id="ic-iocs">—</div><div class="ic-lbl">IOC Indicators</div></div>
+</div>
+
+<!-- ROW 3: Event Feed | Findings Table | Q&A -->
+<div class="grid-mid">
+
+  <!-- LIVE EVENT FEED -->
+  <div class="pan">
+    <div class="pan-hd"><span class="pan-hd-icon">⚡</span><span class="pan-hd-title">Live Event Feed</span><span class="pan-hd-badge" id="ev-count">0 events</span></div>
+    <div class="pan-body">
+      <div class="feed" id="feed"></div>
+    </div>
+  </div>
+
+  <!-- FINDINGS TABLE -->
+  <div class="pan">
+    <div class="pan-hd"><span class="pan-hd-icon">🔍</span><span class="pan-hd-title">Critical Findings</span></div>
+    <div class="pan-body" style="overflow-x:auto;max-height:300px;overflow-y:auto;">
+      <table class="tbl">
+        <thead><tr><th>Engine / API</th><th>Sev</th><th>Description</th></tr></thead>
+        <tbody id="find-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Q&A AGENT -->
+  <div class="pan">
+    <div class="pan-hd"><span class="pan-hd-icon">🤖</span><span class="pan-hd-title">Analyst Q&A</span><span class="pan-hd-badge">CLAUDE AI</span></div>
+    <div class="pan-body">
+      <div class="qa-msgs" id="qa-msgs">
+        <div class="qa-m a"><div class="qa-lbl">RAKSHAK-AI</div>
+        <div class="qa-txt">Complete an analysis then ask me anything — capabilities, threat actor, attack chain, recommended actions.</div></div>
+      </div>
+      <div class="qa-row">
+        <input class="qa-inp" id="qa-inp" placeholder="What data does this APK steal?" onkeydown="if(event.key==='Enter')sendQ()">
+        <button class="btn btn-p" onclick="sendQ()" id="qa-btn" disabled style="padding:8px 14px;">▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 4: IOCs | MITRE ATT&CK -->
+<div class="grid-bot">
+  <div class="pan">
+    <div class="pan-hd"><span class="pan-hd-icon">🌐</span><span class="pan-hd-title">Network IOC Intelligence</span></div>
+    <div class="pan-body" style="max-height:220px;overflow-y:auto;">
+      <div id="ioc-list"><div style="font-family:var(--mo);font-size:10px;color:var(--t3);">No IOCs yet</div></div>
+    </div>
+  </div>
+  <div class="pan">
+    <div class="pan-hd"><span class="pan-hd-icon">🗺</span><span class="pan-hd-title">MITRE ATT&CK Mobile</span></div>
+    <div class="pan-body">
+      <div class="mitre-wrap" id="mitre-wrap"><div style="font-family:var(--mo);font-size:10px;color:var(--t3);">Awaiting analysis</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .app -->
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+let file=null,caseId=null,ws=null,result=null,evCount=0;
+const SEV_COLORS={CRITICAL:'#ff3333',HIGH:'#ff9900',MEDIUM:'#ffdd00',LOW:'#44bb44',CLEAN:'#00cc77'};
+
+// ── CLOCK ────────────────────────────────────────────────────────────────────
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toUTCString().replace('GMT','UTC');},1000);
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+const uz=document.getElementById('uz');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('over');});
+uz.addEventListener('dragleave',()=>uz.classList.remove('over'));
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.name.endsWith('.apk'))setFile(f);});
+
+function setFile(f){
+  file=f;
+  document.getElementById('fc').style.display='flex';
+  document.getElementById('fn').textContent=f.name;
+  document.getElementById('fs').textContent=(f.size/1024/1024).toFixed(1)+'MB';
+  document.getElementById('abtn').disabled=false;
+  addEvent('INTAKE','INFO',`File: ${f.name} (${(f.size/1024/1024).toFixed(1)}MB)`);
+}
+
+// ── ANALYSIS ─────────────────────────────────────────────────────────────────
+async function startAnalysis(){
+  if(!file)return;
+  document.getElementById('abtn').disabled=true;
+  document.getElementById('job-badge').textContent='RUNNING';
+  resetEngines();
+  setRing(0,'—','#888');
+
+  const fd=new FormData();
+  fd.append('file',file);
+  fd.append('analyst_name',document.getElementById('analyst').value||'DRDO-AUTO');
+  fd.append('enable_dynamic','true');
+  fd.append('enable_network','true');
+
+  addEvent('SUBMIT','INFO','Uploading APK to RAKSHAK...');
+  try{
+    const r=await fetch('/api/analyze/advanced',{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok){addEvent('ERROR','CRITICAL',d.detail||'Upload failed');return;}
+    caseId=d.case_id;
+    document.getElementById('cid-disp').textContent='Case: '+caseId;
+    addEvent('QUEUED','INFO','Case: '+caseId);
+    connectWS(caseId);
+  }catch(e){addEvent('ERROR','CRITICAL','Network error: '+e.message);document.getElementById('abtn').disabled=false;}
+}
+
+// ── WEBSOCKET ─────────────────────────────────────────────────────────────────
+function connectWS(cid){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(`${proto}://${location.host}/ws/analysis/${cid}`);
+
+  ws.onmessage=(e)=>{
+    const ev=JSON.parse(e.data);
+    if(ev.type==='ping')return;
+    handleEvent(ev);
+  };
+  ws.onerror=()=>addEvent('WS-ERR','CRITICAL','WebSocket error — switching to poll');
+  ws.onclose=()=>{
+    if(document.getElementById('job-badge').textContent==='RUNNING')
+      setTimeout(()=>pollResult(cid),2000);
+  };
+}
+
+async function pollResult(cid){
+  try{
+    const r=await fetch('/api/result/'+cid);
+    const d=await r.json();
+    if(d.status==='COMPLETE'){renderFinal(d);}
+    else if(d.status==='ERROR'){addEvent('ERROR','CRITICAL',d.error||'Analysis failed');}
+    else setTimeout(()=>pollResult(cid),2500);
+  }catch(e){}
+}
+
+// ── EVENT HANDLER ─────────────────────────────────────────────────────────────
+function handleEvent(ev){
+  const t=ev.type,d=ev.data||{},sev=ev.severity||'INFO';
+  addEvent(t,sev,eventSummary(t,d));
+
+  // Engine status updates
+  const eng={
+    'hash_complete':'hash','structure_complete':'struct',
+    'manifest_complete':'manifest','static_complete':'static',
+    'static_finding':'static','yara_complete':'yara',
+    'yara_match':'yara','genai_thinking':'genai','genai_complete':'genai',
+    'score_update':'score','score_final':'score',
+    'analysis_start':'hash','ioc_enriched':'network',
+  };
+  if(eng[t]){setEngine(eng[t],'active','●');}
+
+  // Score ring live update
+  if(t==='score_update'&&d.total_so_far){setRing(d.total_so_far,'…','#ffaa00');}
+  if(t==='score_final'&&d.final_score!==undefined){
+    setRing(d.final_score,d.final_score,SEV_COLORS[d.severity]||'#888');
+    setSevBadge(d.severity);
+    updateSummaryCards(d);
+    if(d.nation_state||d.apt_detected){showAPT(d);}
+    renderXAI(d.breakdown||{});
+    renderMitre(d.mitre||[]);
+  }
+
+  // Findings
+  if(t==='static_finding'&&d.api){addFinding(d.engine||'STATIC',sev,d.api,d.description||d.note||'');}
+  if(t==='yara_match'){addFinding('YARA-'+d.rule_id,sev,d.family,'Family match — weight '+d.weight);}
+  if(t==='c2_found'){addIOC('C2',d.indicator||'');
+    document.getElementById('apt-alert').style.display='flex';
+    document.getElementById('apt-body').textContent='C2 infrastructure confirmed: '+d.indicator;}
+  if(t==='banking_threat'){addFinding('BANKING',sev,
+    (d.otp_harvesting?'OTP Harvesting ':'')+(d.overlay_attack?'Overlay Attack':''),
+    'Banking fraud pattern detected');}
+  if(t==='critical_vuln'){addFinding('CVE',sev,d.name||'',d.description||'');}
+
+  // Mark engine done
+  if(t==='static_complete'&&!d.engine){setEngine('static','done','✓');}
+  if(t==='yara_complete'){setEngine('yara','done','✓');}
+  if(t==='genai_complete'){setEngine('genai','done','✓');}
+  if(t==='analysis_complete'){
+    document.getElementById('job-badge').textContent='COMPLETE';
+    ['hash','struct','manifest','static','yara','ml','genai','frida','network','score','stix','misp']
+      .forEach(e=>setEngine(e,'done','✓'));
+    document.getElementById('abtn').disabled=false;
+    document.getElementById('qa-btn').disabled=false;
+    if(d.final_score){setRing(d.final_score,d.final_score,SEV_COLORS[d.severity]||'#888');}
+  }
+  if(t==='nation_state_alert'){showAPT(d);}
+
+  // IOCs from strings
+  if(t==='ioc_enriched'){setEngine('network','done','✓');}
+}
+
+function eventSummary(type,d){
+  const map={
+    'analysis_start':'Starting 11-engine analysis...',
+    'hash_complete':`SHA256: ${(d.sha256||'').slice(0,12)}… | ${d.files||0} files | ${d.dex_count||0} DEX`,
+    'manifest_complete':`Package: ${d.package||'?'} | ${d.dangerous||0} dangerous perms`,
+    'static_finding':d.description||d.note||d.title||'Finding',
+    'yara_match':`Family: ${d.family} | weight=${d.weight}`,
+    'genai_thinking':d.message||'AI reasoning...',
+    'genai_complete':`${d.threat_type} | ${d.classification} (${d.confidence})`,
+    'score_update':`${d.dimension}: raw=${d.raw} contrib=+${d.contribution}`,
+    'score_final':`FINAL SCORE: ${d.final_score}/100 (${d.severity})`,
+    'c2_found':`C2 CONFIRMED: ${d.indicator||''}`,
+    'banking_threat':'Banking fraud capabilities detected',
+    'nation_state_alert':'NATION-STATE THREAT — ESCALATE IMMEDIATELY',
+    'analysis_complete':`Analysis complete in ${d.duration_sec||'?'}s`,
+    'analysis_error':`ERROR: ${d.error||'Unknown error'}`,
+    'ioc_enriched':`Network: ${d.confirmed_c2||0} C2 confirmed`,
+  };
+  return map[type]||type;
+}
+
+// ── RENDER FINAL RESULT ───────────────────────────────────────────────────────
+function renderFinal(data){
+  result=data;
+  const rs=data.risk_score||{},s=data.summary||{};
+  setRing(rs.final_score||0,rs.final_score||0,SEV_COLORS[rs.severity]||'#888');
+  setSevBadge(rs.severity);
+  updateSummaryCards({...s,...rs});
+  renderXAI(rs.breakdown||{});
+  renderMitre(rs.mitre_techniques||[]);
+  if(rs.apt_detected||rs.nation_state)showAPT(rs);
+  document.getElementById('abtn').disabled=false;
+  document.getElementById('qa-btn').disabled=false;
+  document.getElementById('job-badge').textContent='COMPLETE';
+  renderIOCs(data.strings||{});
+}
+
+function updateSummaryCards(d){
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('ic-score',(d.final_score||d.risk_score||'—'));
+  set('ic-sev',d.severity||'—');
+  set('ic-fam',(d.primary_family||'—').split('/')[0].split(' ')[0]);
+  set('ic-find',d.total_findings||'—');
+  set('ic-vulns',d.critical_vulns||'—');
+  set('ic-iocs',d.c2_indicators||'—');
+}
+
+function renderXAI(bd){
+  const el=document.getElementById('xai-bars');
+  el.innerHTML=Object.entries(bd).map(([k,v])=>{
+    const raw=v.raw_score||0,pts=(v.contribution||0).toFixed(2);
+    return `<div class="xai-row">
+      <span class="xai-lbl">${k.replace(/_/g,' ')}</span>
+      <div class="xai-bar"><div class="xai-fill" style="width:${raw}%"></div></div>
+      <span class="xai-pts">+${pts}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderMitre(techniques){
+  document.getElementById('mitre-wrap').innerHTML=
+    techniques.map(t=>`<div class="mitre-tag" title="${t.name}">${t.id}</div>`).join('')||
+    '<div style="font-family:var(--mo);font-size:10px;color:var(--t3);">None mapped</div>';
+}
+
+function renderIOCs(strings){
+  const items=[
+    ...(strings.ips||[]).map(i=>`<div class="ioc-item"><span class="ioc-tag">IP/C2</span><span class="ioc-val">${i.ip} — ${i.type}</span></div>`),
+    ...(strings.urls||[]).slice(0,10).map(u=>`<div class="ioc-item"><span class="ioc-tag">URL</span><span class="ioc-val">[${u.risk}] ${u.url.slice(0,80)}</span></div>`),
+    ...(strings.telegram_tokens||[]).map(t=>`<div class="ioc-item"><span class="ioc-tag">TG-C2</span><span class="ioc-val">${t}</span></div>`),
+    ...(strings.emails||[]).map(e=>`<div class="ioc-item"><span class="ioc-tag">EMAIL</span><span class="ioc-val">${e}</span></div>`),
+  ];
+  document.getElementById('ioc-list').innerHTML=items.join('')||
+    '<div style="font-family:var(--mo);font-size:10px;color:var(--t3);">No IOCs extracted</div>';
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────────
+function setRing(score,label,color){
+  const circ=502,offset=circ-(Math.min(score,100)/100)*circ;
+  const r=document.getElementById('ring');
+  r.style.strokeDashoffset=offset;
+  r.style.stroke=color;
+  const n=document.getElementById('rnum');
+  n.textContent=label;
+  n.style.color=color;
+}
+
+function setSevBadge(sev){
+  const el=document.getElementById('sev-badge');
+  const c=SEV_COLORS[sev]||'#888';
+  el.textContent=sev||'—';
+  el.style.color=c;
+  el.style.borderColor=c;
+}
+
+function setEngine(id,cls,status){
+  const el=document.getElementById('eng-'+id);
+  if(!el)return;
+  el.className='eng '+cls;
+  el.querySelector('.eng-status').textContent=status;
+}
+
+function resetEngines(){
+  ['hash','struct','manifest','static','yara','ml','genai','frida','network','score','stix','misp']
+    .forEach(e=>setEngine(e,'','—'));
+}
+
+function addEvent(type,sev,msg){
+  evCount++;
+  document.getElementById('ev-count').textContent=evCount+' events';
+  const feed=document.getElementById('feed');
+  const t=new Date().toTimeString().split(' ')[0];
+  const div=document.createElement('div');
+  div.className=`ev ev-${sev}`;
+  div.innerHTML=`<span class="ev-time">${t}</span><span class="ev-type">[${type.replace('_','-').toUpperCase().slice(0,14)}]</span><span class="ev-msg">${msg}</span>`;
+  feed.appendChild(div);
+  feed.scrollTop=feed.scrollHeight;
+}
+
+let findRows=0;
+function addFinding(engine,sev,title,desc){
+  if(findRows>40)return;
+  const chip=sev==='CRITICAL'?'chip-c':sev==='HIGH'?'chip-h':'chip-m';
+  const row=document.createElement('tr');
+  row.innerHTML=`<td>${(title||'').slice(0,30)}</td><td><span class="chip ${chip}">${sev}</span></td><td>${(desc||'').slice(0,60)}</td>`;
+  document.getElementById('find-tbody').appendChild(row);
+  findRows++;
+}
+
+function addIOC(type,value){
+  if(!value)return;
+  const div=document.createElement('div');
+  div.className='ioc-item';
+  div.innerHTML=`<span class="ioc-tag">${type}</span><span class="ioc-val">${value.slice(0,100)}</span>`;
+  const list=document.getElementById('ioc-list');
+  if(list.querySelector('div[style]'))list.innerHTML='';
+  list.appendChild(div);
+}
+
+function showAPT(d){
+  document.getElementById('apt-alert').style.display='flex';
+  document.getElementById('apt-body').textContent=
+    `Families: ${(d.families||[]).join(', ')||d.primary_family||'Unknown APT'}. `+
+    `Escalate immediately to DRDO NOC, CERT-In, and NTRO. `+
+    `Do NOT execute on live systems.`;
+}
+
+async function sendQ(){
+  const inp=document.getElementById('qa-inp');
+  const q=inp.value.trim();
+  if(!q||!caseId)return;
+  inp.value='';
+  const msgs=document.getElementById('qa-msgs');
+  msgs.innerHTML+=`<div class="qa-m u"><div class="qa-lbl">ANALYST</div><div class="qa-txt">${q}</div></div>`;
+  msgs.innerHTML+=`<div class="qa-m a" id="qa-latest"><div class="qa-lbl">RAKSHAK-AI</div><div class="qa-txt" style="color:var(--t3)">Reasoning…</div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  try{
+    const r=await fetch('/api/question',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({case_id:caseId,question:q})});
+    const d=await r.json();
+    document.getElementById('qa-latest').querySelector('.qa-txt').textContent=d.answer||'No answer.';
+    document.getElementById('qa-latest').querySelector('.qa-txt').style.color='';
+  }catch(e){document.getElementById('qa-latest').querySelector('.qa-txt').textContent='Error: '+e.message;}
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function resetUI(){
+  file=null;caseId=null;evCount=0;
+  if(ws)ws.close();
+  document.getElementById('fi').value='';
+  document.getElementById('fc').style.display='none';
+  document.getElementById('abtn').disabled=true;
+  document.getElementById('qa-btn').disabled=true;
+  document.getElementById('job-badge').textContent='IDLE';
+  document.getElementById('apt-alert').style.display='none';
+  document.getElementById('feed').innerHTML='';
+  document.getElementById('find-tbody').innerHTML='';
+  document.getElementById('ioc-list').innerHTML='<div style="font-family:var(--mo);font-size:10px;color:var(--t3);">No IOCs yet</div>';
+  document.getElementById('mitre-wrap').innerHTML='<div style="font-family:var(--mo);font-size:10px;color:var(--t3);">Awaiting analysis</div>';
+  document.getElementById('xai-bars').innerHTML='';
+  document.getElementById('cid-disp').textContent='';
+  document.getElementById('ev-count').textContent='0 events';
+  findRows=0;
+  setRing(0,'—','#888');
+  setSevBadge('');
+  resetEngines();
+  ['ic-score','ic-sev','ic-fam','ic-find','ic-vulns','ic-iocs'].forEach(id=>{
+    document.getElementById(id).textContent='—';});
+  document.getElementById('qa-msgs').innerHTML=`<div class="qa-m a"><div class="qa-lbl">RAKSHAK-AI</div>
+    <div class="qa-txt">Complete an analysis then ask me anything.</div></div>`;
+}
+</script>
+</body>
+</html>
