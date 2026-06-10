@@ -15,7 +15,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
-[![Claude AI](https://img.shields.io/badge/Claude_AI-Powered-FF6B35?style=flat-square)](https://anthropic.com)
+[![SriAI](https://img.shields.io/badge/SriAI-GenAI%20Reasoning-00C896?style=flat-square)]()
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=flat-square)]()
 [![DRDO](https://img.shields.io/badge/DRDO-Cybersecurity_Division-1a1a2e?style=flat-square)]()
 [![IIT Hyderabad](https://img.shields.io/badge/IIT_Hyderabad-Hackathon-blue?style=flat-square)]()
@@ -26,6 +26,17 @@
 > 11-engine pipeline · Real-time WebSocket streaming · FIR-admissible forensic reports.
 
 </div>
+
+---
+
+## Latest Project Updates
+
+- Frontend dashboard runs at `http://127.0.0.1:8000/` when the FastAPI server is active.
+- Analyst Q&A is branded as **SriAI** and answers from the completed APK analysis report.
+- Gemini is supported through `GEMINI_API_KEY`; Anthropic is optional.
+- Dashboard includes a **PDF REPORT** download button after analysis completion.
+- Forensic PDFs include one highlighted footer credit: **DEVELOPED BY MOHAN SRIRAM KUNAMSETTY**.
+- PDF layout has been cleaned up: no diagonal watermark, aligned risk score/severity, wrapped table cells, and safer footer spacing.
 
 ---
 
