@@ -56,7 +56,7 @@ async def root():
     """Serve the RAKSHAK dashboard"""
     dashboard = STATIC_DIR / "dashboard.html"
     if dashboard.exists():
-        return HTMLResponse(content=dashboard.read_text())
+        return FileResponse(str(dashboard), media_type="text/html")
     return HTMLResponse(content="<h1>RAKSHAK v3.0 — Dashboard not built yet</h1>")
 
 
