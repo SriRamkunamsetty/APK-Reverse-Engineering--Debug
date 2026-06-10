@@ -25,7 +25,7 @@ for d in [UPLOAD_DIR, REPORT_DIR, YARA_DIR, STATIC_DIR]:
 
 # ─── API CONFIGURATION ─────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY", "")
-GEMINI_API_KEY       = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY       = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
 GEMINI_MODEL         = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 VIRUSTOTAL_API_KEY   = os.getenv("VIRUSTOTAL_API_KEY", "")
 ABUSEIPDB_API_KEY    = os.getenv("ABUSEIPDB_API_KEY", "")
@@ -180,6 +180,9 @@ MITRE_TECHNIQUES = {
     "T1508": "Suppress Application Icon",
     "T1447": "Delete Device Data",
     "T1629": "Impair Defenses — Device Administrator Permission",
+    "T1512": "Use API/Framework",
+    "T1429": "Audio Capture",
+    "T1582": "SMS Control",
 }
 
 # ─── C2 INDICATOR PATTERNS ─────────────────────────────────────────────────────
@@ -192,6 +195,23 @@ SUSPICIOUS_URL_PATTERNS = [
     r"bit\.ly", r"tinyurl", r"ow\.ly", r"goo\.gl",       # URL shorteners
     r"duckdns\.org", r"ddns\.net", r"no-ip\.org",         # Dynamic DNS
     r"\.onion",                                            # Tor
+]
+
+# Trusted framework/license/certificate infrastructure URLs that are common in
+# benign Android resources and should not be treated as analyst-facing IOCs.
+IOC_URL_ALLOWLIST_PATTERNS = [
+    r"^https?://schemas\.android\.com/",
+    r"^https?://www\.w3\.org/",
+    r"^https?://purl\.org/",
+    r"^https?://www\.apache\.org/licenses/",
+    r"^https?://ns\.adobe\.com/",
+    r"^https?://www\.adobe\.com/type/",
+    r"^https?://www\.verisign\.com/rpa",
+    r"^https?://ocsp\.verisign\.com",
+    r"^https?://crl\.verisign\.com/",
+    r"^https?://[^/]*verisign\.com/.*(?:crl|aia|cer)",
+    r"^https?://firebase\.google\.com/support/privacy/init-options",
+    r"^https?://tizen\.org/",
 ]
 
 # ─── APT GROUP SIGNATURES (India-specific) ────────────────────────────────────

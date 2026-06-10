@@ -289,6 +289,9 @@ Return ONLY the JSON object, no other text."""
     # ── EXECUTIVE SUMMARY (for DRDO leadership) ───────────────────────────────
     def generate_executive_summary(self, apk_name: str, risk_score: int,
                                    threat_analysis: dict, banking: dict) -> str:
+        if not self.available:
+            return self._local_executive_summary(apk_name, risk_score, threat_analysis, banking)
+
         classification = threat_analysis.get("threat_classification", "HIGH")
         capabilities   = threat_analysis.get("key_capabilities", [])
         actions        = threat_analysis.get("immediate_actions", [])
@@ -309,7 +312,34 @@ Paragraph 3: Recommended immediate actions
 
 Keep total length under 200 words. Use assertive, clear language. No bullet points."""
 
-        return self._call_claude(prompt, max_tokens=400)
+        summary = self._call_claude(prompt, max_tokens=400)
+        try:
+            parsed = json.loads(summary)
+            if isinstance(parsed, dict):
+                return self._local_executive_summary(apk_name, risk_score, threat_analysis, banking)
+        except Exception:
+            pass
+        return summary
+
+    def _local_executive_summary(self, apk_name: str, risk_score: int,
+                                 threat_analysis: dict, banking: dict) -> str:
+        threat_type = threat_analysis.get("primary_threat_type", "Suspicious APK requiring analyst review")
+        classification = threat_analysis.get("threat_classification", "UNKNOWN")
+        victims = threat_analysis.get("target_victims", "mobile users and financial customers")
+        capabilities = threat_analysis.get("key_capabilities", []) or ["suspicious static and malware-family indicators"]
+        actions = [
+            a for a in threat_analysis.get("immediate_actions", [])
+            if "GEMINI_API_KEY" not in a and "ANTHROPIC_API_KEY" not in a
+        ] or ["quarantine the APK", "preserve the sample and report", "review extracted IOCs"]
+        banking_note = " Banking-fraud markers were detected." if banking.get("banking_risk_score", 0) > 0 else ""
+
+        return (
+            f"{apk_name} is assessed as {classification} with a risk score of {risk_score}/100. "
+            f"The primary assessment is: {threat_type}. The likely target set is {victims}.{banking_note}\n\n"
+            f"Key observed capabilities include {', '.join(capabilities[:5])}. "
+            "This summary is generated from static analysis, YARA matches, IOC extraction, dynamic indicators, and risk scoring evidence.\n\n"
+            f"Immediate response should include: {', '.join(actions[:4])}."
+        )
 
     # ── ANALYST Q&A AGENT ────────────────────────────────────────────────────
     def answer_analyst_question(self, question: str, full_analysis: dict) -> str:

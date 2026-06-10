@@ -33,10 +33,11 @@
 
 - Frontend dashboard runs at `http://127.0.0.1:8000/` when the FastAPI server is active.
 - Analyst Q&A is branded as **SriAI** and answers from the completed APK analysis report.
-- Gemini is supported through `GEMINI_API_KEY`; Anthropic is optional.
+- Gemini is supported through a local `.env` entry: `GEMINI_API_KEY=your_key_here`. `GOOGLE_API_KEY` is also accepted. Do not commit real keys.
 - Dashboard includes a **PDF REPORT** download button after analysis completion.
 - Forensic PDFs include one highlighted footer credit: **DEVELOPED BY MOHAN SRIRAM KUNAMSETTY**.
 - PDF layout has been cleaned up: no diagonal watermark, aligned risk score/severity, wrapped table cells, and safer footer spacing.
+- AndroidManifest permissions, MITRE technique names, and IOC allowlist filtering are included in the latest report pipeline.
 
 ---
 

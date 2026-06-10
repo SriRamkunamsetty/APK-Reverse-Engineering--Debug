@@ -5,6 +5,7 @@ Chain-of-custody compliant, FIR-admissible
 """
 
 import os
+import re
 from html import escape
 from pathlib import Path
 from datetime import datetime, timezone
@@ -19,7 +20,10 @@ from reportlab.platypus        import (
     HRFlowable, KeepTogether, PageBreak
 )
 
-from config import PLATFORM_NAME, PLATFORM_VERSION, ORGANISATION, CLASSIFICATION_LEVEL
+from config import (
+    PLATFORM_NAME, PLATFORM_VERSION, ORGANISATION, CLASSIFICATION_LEVEL,
+    DANGEROUS_PERMISSIONS, MITRE_TECHNIQUES, IOC_URL_ALLOWLIST_PATTERNS
+)
 
 # ─── COLOUR PALETTE ──────────────────────────────────────────────────────────
 C_BG       = colors.HexColor('#040608')
@@ -46,6 +50,15 @@ SEV_COLORS = {
 
 def sev_color(s: str):
     return SEV_COLORS.get(s.upper(), colors.grey)
+
+
+def is_allowlisted_url(url: str) -> bool:
+    clean = str(url).strip().rstrip('.,);]')
+    return any(re.search(pattern, clean, re.IGNORECASE) for pattern in IOC_URL_ALLOWLIST_PATTERNS)
+
+
+def clean_genai_action(action: str) -> bool:
+    return "GEMINI_API_KEY" not in action and "ANTHROPIC_API_KEY" not in action
 
 
 # ─── STYLE BUILDER ────────────────────────────────────────────────────────────
@@ -330,18 +343,29 @@ class TechnicalReportGenerator:
     # ── EXECUTIVE BRIEF ───────────────────────────────────────────────────────
     def _executive_brief(self, data: dict, st: dict) -> list:
         story = section_header('Executive Brief', '📋')
-        summary = data.get('executive_summary', '') or \
-                  data.get('genai_analysis', {}).get('malicious_intent_summary', 'Not available.')
+        gen = data.get('genai_analysis', {})
+        summary = data.get('executive_summary', '') or gen.get('malicious_intent_summary', '')
+        if not summary or summary.strip().startswith('{') or 'GEMINI_API_KEY' in summary:
+            rs = data.get('risk_score', {})
+            score = rs.get('final_score', data.get('summary', {}).get('risk_score', 'unknown'))
+            severity = rs.get('severity', data.get('summary', {}).get('severity', 'unknown'))
+            threat_type = gen.get('primary_threat_type', data.get('summary', {}).get('threat_type', 'Suspicious APK'))
+            family = rs.get('primary_family', data.get('summary', {}).get('primary_family', 'Unknown family'))
+            summary = (
+                f"This APK is assessed as {severity} risk with score {score}/100. "
+                f"Primary classification: {threat_type}. Malware-family intelligence indicates {family}. "
+                "The assessment is based on manifest inspection, static analysis, YARA family matching, "
+                "IOC extraction, dynamic/sandbox indicators, and explainable risk scoring."
+            )
         story.append(Paragraph(summary, st['body']))
 
-        gen = data.get('genai_analysis', {})
         caps = gen.get('key_capabilities', [])
         if caps:
             story.append(Paragraph('<b>Key Capabilities Identified:</b>', st['h2']))
             for c in caps:
                 story.append(Paragraph(f'• {c}', st['body']))
 
-        actions = gen.get('immediate_actions', [])
+        actions = [a for a in gen.get('immediate_actions', []) if clean_genai_action(str(a))]
         if actions:
             story.append(Paragraph('<b>Immediate Actions Required:</b>', st['h2']))
             for i, a in enumerate(actions, 1):
@@ -395,6 +419,31 @@ class TechnicalReportGenerator:
     def _manifest_section(self, data: dict, st: dict) -> list:
         story = section_header('AndroidManifest.xml Deep Analysis')
         m = data.get('manifest', {})
+
+        permissions = m.get('permissions', [])
+        story.append(Paragraph(f'<b>Requested Android Permissions ({len(permissions)}):</b>', st['h2']))
+        if permissions:
+            rows = []
+            dangerous_lookup = {p.get('permission'): p for p in m.get('dangerous_permissions', [])}
+            for perm in permissions:
+                dangerous = dangerous_lookup.get(perm)
+                short = perm.split('.')[-1]
+                if dangerous:
+                    rows.append([short, 'Dangerous', dangerous.get('severity', ''), dangerous.get('description', '')])
+                elif perm in DANGEROUS_PERMISSIONS:
+                    sev, _, desc = DANGEROUS_PERMISSIONS[perm]
+                    rows.append([short, 'Dangerous', sev, desc])
+                else:
+                    rows.append([short, 'Normal', 'INFO', 'Requested by application manifest'])
+            story.append(findings_table(
+                ['Permission', 'Type', 'Severity', 'Assessment'],
+                rows[:40], [4.7*cm, 2.8*cm, 2*cm, 7*cm]
+            ))
+        else:
+            story.append(Paragraph(
+                'No Android permissions were extracted from this APK manifest. This can occur when the manifest is malformed, obfuscated, protected, or unreadable by the local parser.',
+                st['body']
+            ))
 
         # Dangerous permissions table
         dp = m.get('dangerous_permissions', [])
@@ -545,11 +594,16 @@ class TechnicalReportGenerator:
         story = section_header('Indicators of Compromise (IOCs)')
         s = data.get('strings', {})
 
-        urls = s.get('urls', [])
+        urls = [u for u in s.get('urls', []) if not is_allowlisted_url(u.get('url', u))]
         if urls:
             story.append(Paragraph(f'<b>URLs ({len(urls)}):</b>', st['h2']))
             rows = [[u.get('url','')[:70], u.get('risk','')] for u in urls[:20]]
             story.append(findings_table(['URL', 'Risk'], rows, [13*cm, 3.5*cm]))
+        elif s.get('filtered_urls'):
+            story.append(Paragraph(
+                f"{len(s.get('filtered_urls', []))} standard framework/license/certificate URLs were filtered from IOC output.",
+                st['body']
+            ))
 
         ips = s.get('ips', [])
         if ips:
@@ -598,7 +652,7 @@ class TechnicalReportGenerator:
         story = section_header('MITRE ATT&CK Mobile Framework Mapping')
         techniques = data.get('risk_score', {}).get('mitre_techniques', [])
         if techniques:
-            rows = [[t.get('id',''), t.get('name','')] for t in techniques]
+            rows = [[t.get('id',''), MITRE_TECHNIQUES.get(t.get('id',''), t.get('name','') or 'Unknown')] for t in techniques]
             story.append(findings_table(['Technique ID', 'Name'], rows, [3.5*cm, 13*cm]))
         else:
             story.append(Paragraph('No MITRE techniques mapped.', st['body']))
@@ -609,7 +663,7 @@ class TechnicalReportGenerator:
         story = section_header('Recommendations & Remediation')
         rs  = data.get('risk_score', {})
         gen = data.get('genai_analysis', {})
-        actions = gen.get('immediate_actions', [])
+        actions = [a for a in gen.get('immediate_actions', []) if clean_genai_action(str(a))]
 
         if rs.get('cert_in_report_required'):
             story.append(Paragraph(

@@ -20,7 +20,7 @@ except ImportError:
 
 from config import (
     DANGEROUS_PERMISSIONS, DANGEROUS_API_PATTERNS,
-    INDIAN_BANK_BRANDS, SUSPICIOUS_URL_PATTERNS,
+    INDIAN_BANK_BRANDS, SUSPICIOUS_URL_PATTERNS, IOC_URL_ALLOWLIST_PATTERNS,
     APT_SIGNATURES
 )
 
@@ -420,9 +420,11 @@ class StringAnalyzer:
 
     def analyze(self) -> dict:
         all_strings = self._extract_raw_strings()
+        urls, filtered_urls = self._find_urls(all_strings)
         return {
             "total_strings"      : len(all_strings),
-            "urls"               : self._find_urls(all_strings),
+            "urls"               : urls,
+            "filtered_urls"      : filtered_urls,
             "ips"                : self._find_ips(all_strings),
             "emails"             : self._find_emails(all_strings),
             "suspicious_base64"  : self._find_base64(all_strings),
@@ -453,12 +455,21 @@ class StringAnalyzer:
 
     def _find_urls(self, strings: list[str]) -> list[dict]:
         found = {}
+        filtered = []
         for s in strings:
             for match in self.URL_RE.findall(s):
                 if match not in found:
+                    if self._is_allowlisted_url(match):
+                        filtered.append(match)
+                        continue
                     risk = "HIGH" if any(re.search(p, match) for p in SUSPICIOUS_URL_PATTERNS) else "MEDIUM"
                     found[match] = {"url": match, "risk": risk}
-        return list(found.values())[:50]
+        return list(found.values())[:50], sorted(set(filtered))[:100]
+
+    @staticmethod
+    def _is_allowlisted_url(url: str) -> bool:
+        clean = url.strip().rstrip('.,);]')
+        return any(re.search(pattern, clean, re.IGNORECASE) for pattern in IOC_URL_ALLOWLIST_PATTERNS)
 
     def _find_ips(self, strings: list[str]) -> list[dict]:
         found = set()

@@ -326,6 +326,19 @@ body::after{content:'Developed by Mohan Sriram Kunamsetty';position:fixed;right:
 let file=null,caseId=null,ws=null,result=null,evCount=0;
 const SEV_COLORS={CRITICAL:'#ff3333',HIGH:'#ff9900',MEDIUM:'#ffdd00',LOW:'#44bb44',CLEAN:'#00cc77'};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IOC_ALLOWLIST=[
+  /^https?:\/\/schemas\.android\.com\//i,
+  /^https?:\/\/www\.w3\.org\//i,
+  /^https?:\/\/purl\.org\//i,
+  /^https?:\/\/www\.apache\.org\/licenses\//i,
+  /^https?:\/\/ns\.adobe\.com\//i,
+  /^https?:\/\/www\.adobe\.com\/type\//i,
+  /^https?:\/\/(?:ocsp|crl)\.verisign\.com/i,
+  /^https?:\/\/www\.verisign\.com\/rpa/i,
+  /^https?:\/\/firebase\.google\.com\/support\/privacy\/init-options/i,
+  /^https?:\/\/tizen\.org\//i,
+];
+const isAllowedIOC=url=>IOC_ALLOWLIST.some(rx=>rx.test(String(url||'').trim()));
 
 // ── CLOCK ────────────────────────────────────────────────────────────────────
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toUTCString().replace('GMT','UTC');},1000);
@@ -544,7 +557,7 @@ function renderIOCs(data){
   const items=[
     ...confirmed.map(c=>`<div class="ioc-item"><span class="ioc-tag">C2</span><span class="ioc-val">${esc(c.indicator||c.value||c)}</span></div>`),
     ...(strings.ips||[]).map(i=>`<div class="ioc-item"><span class="ioc-tag">IP/C2</span><span class="ioc-val">${esc(i.ip||i)} — ${esc(i.type||'extracted')}</span></div>`),
-    ...(strings.urls||[]).slice(0,20).map(u=>`<div class="ioc-item"><span class="ioc-tag">URL</span><span class="ioc-val">[${esc(u.risk||'IOC')}] ${esc(String(u.url||u).slice(0,120))}</span></div>`),
+    ...(strings.urls||[]).filter(u=>!isAllowedIOC(u.url||u)).slice(0,20).map(u=>`<div class="ioc-item"><span class="ioc-tag">URL</span><span class="ioc-val">[${esc(u.risk||'IOC')}] ${esc(String(u.url||u).slice(0,120))}</span></div>`),
     ...(strings.telegram_tokens||[]).map(t=>`<div class="ioc-item"><span class="ioc-tag">TG-C2</span><span class="ioc-val">${esc(t)}</span></div>`),
     ...(strings.emails||[]).map(e=>`<div class="ioc-item"><span class="ioc-tag">EMAIL</span><span class="ioc-val">${esc(e)}</span></div>`),
   ];
