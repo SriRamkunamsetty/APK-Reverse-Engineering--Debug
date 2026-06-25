@@ -1,0 +1,36 @@
+# RAKSHAK — .gitignore
+
+# Environment & secrets
+.env
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# RAKSHAK runtime directories (never commit APKs or reports)
+uploads/
+reports/
+database/*.db
+*.log
+last_case_id.txt
+last_submit_response.json
+
+# Accidental scaffold artifact
+{core,models,yara_rules,reports,uploads,static,database,tests}/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
