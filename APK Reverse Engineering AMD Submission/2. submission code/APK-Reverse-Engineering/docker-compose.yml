@@ -1,0 +1,79 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════════
+# RAKSHAK — Docker Compose
+# Full stack: API server + worker + reverse proxy
+# DRDO Cybersecurity Division
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ── RAKSHAK API Server ─────────────────────────────────────────────────────
+  rakshak:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    container_name: rakshak-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
+      - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY:-}
+      - SHODAN_API_KEY=${SHODAN_API_KEY:-}
+    volumes:
+      - rakshak_uploads:/app/uploads
+      - rakshak_reports:/app/reports
+      - rakshak_db:/app/database
+    networks:
+      - rakshak-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "com.drdo.service=rakshak-api"
+      - "com.drdo.classification=SENSITIVE"
+
+  # ── Nginx Reverse Proxy (optional, for TLS termination) ───────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: rakshak-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - rakshak_ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - rakshak
+    networks:
+      - rakshak-net
+    profiles:
+      - production
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  rakshak_uploads:
+    driver: local
+  rakshak_reports:
+    driver: local
+  rakshak_db:
+    driver: local
+  rakshak_ssl:
+    driver: local
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  rakshak-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
